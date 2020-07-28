@@ -38,4 +38,14 @@ public class MapperStatement {
     public void setSql(String sql) {
         this.sql = sql;
     }
+
+    @Override
+    public String toString() {
+        return "MapperStatement{" +
+                "id='" + id + '\'' +
+                ", parameterType='" + parameterType + '\'' +
+                ", resultType='" + resultType + '\'' +
+                ", sql='" + sql + '\'' +
+                '}';
+    }
 }
