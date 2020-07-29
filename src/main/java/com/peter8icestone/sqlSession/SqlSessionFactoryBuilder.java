@@ -10,16 +10,12 @@ import java.io.InputStream;
 public class SqlSessionFactoryBuilder {
 
     public SqlSessionFactory build(InputStream in) throws DocumentException, PropertyVetoException {
-        /*
-         * use dom4j to analysis the configure file
-         * and encapsulate to Configuration object
-         */
+        // use dom4j to analysis the configure file
+        // and encapsulate to Configuration object
         XMLConfigBuilder xmlConfigBuilder = new XMLConfigBuilder();
         Configuration configuration = xmlConfigBuilder.parseConfig(in);
-        /*
-         * create SqlSessionFactory object to produce SqlSession object (Factory Pattern)
-         */
-        SqlSessionFactory defaultSqlSessionFactory = new DefaultSqlSessionFactory(configuration);
-        return defaultSqlSessionFactory;
+        // create SqlSessionFactory object
+
+        return null;
     }
 }
