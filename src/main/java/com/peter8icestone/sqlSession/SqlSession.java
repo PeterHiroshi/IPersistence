@@ -1,5 +1,6 @@
 package com.peter8icestone.sqlSession;
 
+import java.sql.SQLException;
 import java.util.List;
 
 public interface SqlSession {
