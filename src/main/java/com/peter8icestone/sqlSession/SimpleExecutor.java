@@ -60,14 +60,14 @@ public class SimpleExecutor implements Executor {
                 continue;
             }
             declaredField.setAccessible(true);
-            Object o = null;
+            Object paramObj = null;
             try {
-                o = declaredField.get(params[0]);
+                paramObj = declaredField.get(params[0]);
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             }
             int paramIdx = i + 1;
-            Optional.ofNullable(o)
+            Optional.ofNullable(paramObj)
                     .ifPresent(obj -> {
                         try {
                             assert preparedStatement != null;
