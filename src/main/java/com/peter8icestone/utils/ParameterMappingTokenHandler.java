@@ -6,7 +6,7 @@ import java.util.List;
 public class ParameterMappingTokenHandler implements TokenHandler {
 	private List<ParameterMapping> parameterMappings = new ArrayList<ParameterMapping>();
 
-	// context是参数名称 #{id} #{username}
+	// context是参数名称 #{userId} #{username}
 
 	public String handleToken(String content) {
 		parameterMappings.add(buildParameterMapping(content));
