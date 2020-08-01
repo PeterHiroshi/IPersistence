@@ -96,10 +96,10 @@ public class SimpleExecutor implements Executor {
                     ArrayList<Object> objs = new ArrayList<>();
                     try {
                         Class<?> resultTypeClass = getClassType(resultTypeStr);
-                        Object resultClassInstance = resultTypeClass.newInstance();
                         while (rs.next()) {
                             // get meta data
                             ResultSetMetaData metaData = rs.getMetaData();
+                            Object resultClassInstance = resultTypeClass.newInstance();
                             for (int i = 1; i <= metaData.getColumnCount(); i++) {
                                 String columnName = metaData.getColumnName(i);
                                 Object objPerColumn = rs.getObject(columnName);
