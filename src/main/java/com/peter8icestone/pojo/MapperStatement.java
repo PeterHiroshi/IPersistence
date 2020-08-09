@@ -1,11 +1,14 @@
 package com.peter8icestone.pojo;
 
+import com.peter8icestone.enums.SqlCommandType;
+
 public class MapperStatement {
 
     private String id;
     private String parameterType;
     private String resultType;
     private String sql;
+    private SqlCommandType sqlCommandType;
 
     public String getId() {
         return id;
@@ -39,6 +42,14 @@ public class MapperStatement {
         this.sql = sql;
     }
 
+    public SqlCommandType getSqlCommandType() {
+        return sqlCommandType;
+    }
+
+    public void setSqlCommandType(SqlCommandType sqlCommandType) {
+        this.sqlCommandType = sqlCommandType;
+    }
+
     @Override
     public String toString() {
         return "MapperStatement{" +
@@ -46,6 +57,7 @@ public class MapperStatement {
                 ", parameterType='" + parameterType + '\'' +
                 ", resultType='" + resultType + '\'' +
                 ", sql='" + sql + '\'' +
+                ", sqlCommandType=" + sqlCommandType +
                 '}';
     }
 }

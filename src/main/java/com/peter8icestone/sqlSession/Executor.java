@@ -8,5 +8,7 @@ import java.util.List;
 
 public interface Executor {
 
-    public <E> List<E> query(Configuration configuration, MapperStatement mapperStatement, Object... params);
+    <E> List<E> query(MapperStatement mapperStatement, Object... params);
+
+    int update(MapperStatement mapperStatement, Object... param);
 }

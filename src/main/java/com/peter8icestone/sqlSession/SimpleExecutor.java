@@ -18,66 +18,19 @@ import java.util.Optional;
 
 public class SimpleExecutor implements Executor {
 
-    @Override
-    public <E> List<E> query(Configuration configuration, MapperStatement mapperStatement, Object... params) {
-        // register driver and get connection
-        Connection connection = null;
-        try {
-            connection = configuration.getDataSource().getConnection();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        // get sql
-        String sql = mapperStatement.getSql();
-        // parse sql
-        BoundSql boundSql = getBoundSql(sql);
-        // get preparedStatement
-        PreparedStatement preparedStatement = Optional.ofNullable(connection)
-                .map(conn -> {
-                    try {
-                        return conn.prepareStatement(boundSql.getSqlText());
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                    }
-                    return null;
-                }).orElse(null);
-        // set parameters
-        // get the Class object of parameter's type
-        String parameterTypeStr = mapperStatement.getParameterType();
-        Class<?> parameterTypeClass = getClassType(parameterTypeStr);
-        List<ParameterMapping> parameterMappingList = boundSql.getParameterMappingList();
-        for (int i = 0; i < parameterMappingList.size(); i++) {
-            ParameterMapping parameterMapping = parameterMappingList.get(i);
-            String content = parameterMapping.getContent();
-            // reflection
-            Field declaredField = null;
-            try {
-                declaredField = parameterTypeClass.getDeclaredField(content);
-            } catch (NoSuchFieldException e) {
-                e.printStackTrace();
-            }
-            if (declaredField == null) {
-                continue;
-            }
-            declaredField.setAccessible(true);
-            Object paramObj = null;
-            try {
-                paramObj = declaredField.get(params[0]);
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            }
-            int paramIdx = i + 1;
-            Optional.ofNullable(paramObj)
-                    .ifPresent(obj -> {
-                        try {
-                            assert preparedStatement != null;
-                            preparedStatement.setObject(paramIdx, obj);
-                        } catch (SQLException e) {
-                            e.printStackTrace();
-                        }
-                    });
-        }
+    private Configuration configuration;
 
+    public SimpleExecutor(Configuration configuration) {
+        this.configuration = configuration;
+    }
+
+    private Connection getConnection() throws SQLException {
+        return configuration.getDataSource().getConnection();
+    }
+
+    @Override
+    public <E> List<E> query(MapperStatement mapperStatement, Object... params) {
+        PreparedStatement preparedStatement = prepareStatement(mapperStatement, params);
         // execute sql
         ResultSet resultSet = Optional.ofNullable(preparedStatement)
                 .map(preparedStatement1 -> {
@@ -118,6 +71,19 @@ public class SimpleExecutor implements Executor {
         return (List<E>) results;
     }
 
+    @Override
+    public int update(MapperStatement mapperStatement, Object... param) {
+        PreparedStatement preparedStatement = prepareStatement(mapperStatement, param);
+        int rows = 0;
+        try {
+            preparedStatement.execute();
+            rows = preparedStatement.getUpdateCount();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return rows;
+    }
+
     /**
      * return class type by parameter type
      * @param typeStr String of parameter type
@@ -151,6 +117,94 @@ public class SimpleExecutor implements Executor {
         List<ParameterMapping> parameterMappings =
                 ((ParameterMappingTokenHandler) parameterMappingTokenHandler).getParameterMappings();
         return new BoundSql(parsedSql, parameterMappings);
+    }
+
+    private PreparedStatement prepareStatement(MapperStatement mapperStatement, Object... params) {
+        // register driver and get connection
+        Connection connection = null;
+        try {
+            connection = getConnection();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        // get sql
+        String sql = mapperStatement.getSql();
+        // parse sql
+        BoundSql boundSql = getBoundSql(sql);
+        // get preparedStatement
+        PreparedStatement preparedStatement = Optional.ofNullable(connection)
+                .map(conn -> {
+                    try {
+                        return conn.prepareStatement(boundSql.getSqlText());
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                    return null;
+                }).orElse(null);
+        // set parameters
+        // get the Class object of parameter's type
+        String parameterTypeStr = mapperStatement.getParameterType();
+        Class<?> parameterTypeClass = getClassType(parameterTypeStr);
+        List<ParameterMapping> parameterMappingList = boundSql.getParameterMappingList();
+        if (parameterTypeClass != null) {
+            boolean isWrapClass = isWrapClass(parameterTypeClass);
+            for (int i = 0; i < parameterMappingList.size(); i++) {
+                ParameterMapping parameterMapping = parameterMappingList.get(i);
+                String content = parameterMapping.getContent();
+                Object paramObj = null;
+                if (isWrapClass) {
+                    paramObj = params[i];
+                } else {
+                    // reflection
+                    Field declaredField = null;
+                    try {
+                        declaredField = parameterTypeClass.getDeclaredField(content);
+                    } catch (NoSuchFieldException e) {
+                        e.printStackTrace();
+                    }
+                    if (declaredField == null) {
+                        continue;
+                    }
+                    declaredField.setAccessible(true);
+                    try {
+                        paramObj = declaredField.get(params[0]);
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
+                }
+                int paramIdx = i + 1;
+                Optional.ofNullable(paramObj)
+                        .ifPresent(paramObj1 -> {
+                            try {
+                                assert preparedStatement != null;
+                                preparedStatement.setObject(paramIdx, paramObj1);
+                            } catch (SQLException e) {
+                                e.printStackTrace();
+                            }
+                        });
+            }
+        }
+        return preparedStatement;
+    }
+
+    private boolean isWrapClass(Class clz) {
+        return Optional.ofNullable(clz)
+                .map(clz1 -> {
+                    try {
+                        return clz1.getField("TYPE");
+                    } catch (NoSuchFieldException e) {
+                        return null;
+                    }
+                })
+                .map(field -> {
+                    try {
+                        return (Class) field.get(null);
+                    } catch (IllegalAccessException e) {
+                        return null;
+                    }
+                })
+                .map(Class::isPrimitive)
+                .orElse(false);
     }
 
 }

@@ -1,6 +1,5 @@
 package com.peter8icestone.sqlSession;
 
-import java.sql.SQLException;
 import java.util.List;
 
 public interface SqlSession {
@@ -8,6 +7,12 @@ public interface SqlSession {
     <E> List<E> selectList(String statementId, Object... params);
 
     <T> T selectOne(String statementId, Object... params);
+
+    int insert(String statementId, Object... param);
+
+    int update(String statementId, Object... param);
+
+    int delete(String statementId, Object... param);
 
     /**
      * return proxy instance of Dao Interface

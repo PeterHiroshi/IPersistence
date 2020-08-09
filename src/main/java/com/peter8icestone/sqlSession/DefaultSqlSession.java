@@ -1,5 +1,6 @@
 package com.peter8icestone.sqlSession;
 
+import com.peter8icestone.enums.SqlCommandType;
 import com.peter8icestone.pojo.Configuration;
 import com.peter8icestone.pojo.MapperStatement;
 
@@ -19,9 +20,9 @@ public class DefaultSqlSession implements SqlSession {
 
     @Override
     public <E> List<E> selectList(String statementId, Object... params) {
-        Executor simpleExecutor = new SimpleExecutor();
+        Executor simpleExecutor = new SimpleExecutor(configuration);
         MapperStatement mapperStatement = configuration.getMappedStatementMap().get(statementId);
-        return simpleExecutor.query(configuration, mapperStatement, params);
+        return simpleExecutor.query(mapperStatement, params);
     }
 
     @Override
@@ -34,6 +35,23 @@ public class DefaultSqlSession implements SqlSession {
     }
 
     @Override
+    public int insert(String statementId, Object... param) {
+        return update(statementId, param);
+    }
+
+    @Override
+    public int update(String statementId, Object... param) {
+        SimpleExecutor simpleExecutor = new SimpleExecutor(configuration);
+        MapperStatement mapperStatement = configuration.getMappedStatementMap().get(statementId);
+        return simpleExecutor.update(mapperStatement, param);
+    }
+
+    @Override
+    public int delete(String statementId, Object... param) {
+        return update(statementId, param);
+    }
+
+    @Override
     public <T> T getMapper(Class mapperClass) {
         // execute JDBC
         // new jdk proxy instance
@@ -42,13 +60,24 @@ public class DefaultSqlSession implements SqlSession {
             String methodName = method.getName();
             String className = method.getDeclaringClass().getName();
             String statementId = className + "." + methodName;
-            // automatically call selectOne() or selectList by condition
-            Type genericReturnType = method.getGenericReturnType();
-            // 判断是否实现 泛型类型参数化
-            if (genericReturnType instanceof ParameterizedType) {
-                return selectList(statementId, args);
+            SqlCommandType sqlCommandType = configuration.getMappedStatementMap().get(statementId).getSqlCommandType();
+            switch (sqlCommandType) {
+                case INSERT:
+                    return insert(statementId, args);
+                case SELECT:
+                    // automatically call selectOne() or selectList by condition
+                    Type genericReturnType = method.getGenericReturnType();
+                    // 判断是否实现 泛型类型参数化
+                    if (genericReturnType instanceof ParameterizedType) {
+                        return selectList(statementId, args);
+                    }
+                    return selectOne(statementId, args);
+                case UPDATE:
+                    return update(statementId, args);
+                case DELETE:
+                    return delete(statementId, args);
             }
-            return selectOne(statementId, args);
+            return null;
         });
         return (T) proxyInstance;
     }
